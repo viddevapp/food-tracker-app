@@ -22,7 +22,6 @@
                     <button id="actions-menu-btn">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
                     </button>
-                    <!-- ** MODIFIED: Button text and IDs changed for Import/Export ** -->
                     <div id="actions-dropdown" class="hidden">
                         <button id="import-data-btn">Import Data</button>
                         <button id="export-data-btn">Export Data</button>
@@ -57,24 +56,26 @@
                     <button type="submit" id="submit-entry-btn" class="btn-primary" disabled>Add to Day</button>
                 </form>
 
-                <div id="totals">
-                    <div class="section-header">
-                        <h2>Day's Goals</h2>
-                        <button id="edit-goals-btn" class="text-btn">Edit Goals</button>
+                <!-- ** MODIFIED: New wrapper for scrollable content ** -->
+                <div class="scrollable-content">
+                    <div id="totals">
+                        <div class="section-header">
+                            <h2>Day's Goals</h2>
+                            <button id="edit-goals-btn" class="text-btn">Edit Goals</button>
+                        </div>
+                        <div class="goal-stat">
+                            <div class="goal-label"><span>Calories</span><span id="total-calories-text">0 / 2000 kcal</span></div>
+                            <div class="progress-bar-background"><div id="calories-progress-bar" class="progress-bar-fill"></div></div>
+                        </div>
+                        <div class="goal-stat">
+                            <div class="goal-label"><span>Protein</span><span id="total-protein-text">0 / 120 g</span></div>
+                            <div class="progress-bar-background"><div id="protein-progress-bar" class="progress-bar-fill"></div></div>
+                        </div>
                     </div>
-                    <div class="goal-stat">
-                        <div class="goal-label"><span>Calories</span><span id="total-calories-text">0 / 2000 kcal</span></div>
-                        <div class="progress-bar-background"><div id="calories-progress-bar" class="progress-bar-fill"></div></div>
-                    </div>
-                    <div class="goal-stat">
-                        <div class="goal-label"><span>Protein</span><span id="total-protein-text">0 / 120 g</span></div>
-                        <div class="progress-bar-background"><div id="protein-progress-bar" class="progress-bar-fill"></div></div>
-                    </div>
-                </div>
 
-                <div class="scrollable-list-container">
                     <div id="daily-food-list"></div>
                 </div>
+                 <!-- ** MODIFIED: Removed the old scrollable-list-container ** -->
             </main>
             
             <div id="tracker-footer">

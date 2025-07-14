@@ -69,14 +69,13 @@ select { appearance: none; background-image: url('data:image/svg+xml;charset=US-
 .btn-secondary { width: 100%; padding: 12px; border: 1px solid #555; background-color: transparent; color: #ccc; font-size: 15px; font-weight: 600; border-radius: 8px; cursor: pointer; transition: background-color 0.2s; }
 .btn-secondary:hover { background-color: #333; }
 
-/* ** NEW: Style for disabled buttons ** */
 .btn-primary:disabled, .btn-secondary:disabled {
     background-color: #444;
     color: #888;
     cursor: not-allowed;
 }
 .btn-primary:disabled:hover {
-    background-color: #444; /* Prevent hover effect on disabled button */
+    background-color: #444;
 }
 
 /* 5. Autocomplete */
@@ -92,12 +91,30 @@ select { appearance: none; background-image: url('data:image/svg+xml;charset=US-
 h2 { color: #ffffff; padding-bottom: 8px; margin-bottom: 0; border-bottom: none; }
 h3 { margin-top: 0; color: #eee; }
 #totals { background-color: #2a2a2a; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+
+/* ** MODIFIED: Meal header style updated for better alignment ** */
 .meal-header {
-    background-color: #2a2a2a; padding: 8px 15px; margin: 15px -15px 5px -15px; font-weight: 600; color: #4CAF50;
-    display: flex; justify-content: space-between; align-items: center;
+    background-color: #2a2a2a;
+    padding: 8px 15px;
+    margin: 15px 0 5px 0; /* Removed negative horizontal margins */
+    border-radius: 6px; /* Added border-radius for a cleaner look */
+    font-weight: 600;
+    color: #4CAF50;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 .meal-subtotal { font-size: 0.8em; color: #aaa; font-weight: normal; }
-.scrollable-list-container { flex-grow: 1; overflow-y: auto; padding-bottom: 10px; }
+
+/* ** MODIFIED: New class for the main scrollable area on the tracker page ** */
+.scrollable-content {
+    flex-grow: 1;
+    overflow-y: auto;
+    /* Add a little padding to prevent the scrollbar from touching content */
+    padding-right: 5px;
+}
+/* ** MODIFIED: Removed old scrollable-list-container class ** */
+
 .food-item, .db-food-item { padding: 12px 5px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
 
 .sort-container { display: flex; align-items: center; gap: 8px; }
