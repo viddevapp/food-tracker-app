@@ -1,4 +1,4 @@
-/* --- Modern Dark Theme (Responsive) --- */
+/* --- Modern Dark Theme (Responsive & Sticky Footer) --- */
 
 /* Universal Box Sizing */
 * {
@@ -17,6 +17,7 @@ body {
 #app-container {
     width: 100%;
     min-height: 100vh;
+    max-height: 100vh; /* Prevent the container itself from growing past the screen */
     background-color: #1e1e1e;
     display: flex;
     flex-direction: column;
@@ -53,16 +54,24 @@ nav {
 
 
 /* 3. Page Management */
-.page { display: none; flex-direction: column; flex-grow: 1; overflow: hidden; }
-.page.active { display: flex; }
+/* ** MODIFIED: This is now the primary flex container for the sticky footer ** */
+.page {
+    display: none;
+    flex-direction: column; /* Stack main content and footer vertically */
+    flex-grow: 1;
+    overflow: hidden; /* Hide any overflow on the page itself */
+}
+.page.active {
+    display: flex; /* Activate flexbox when page is visible */
+}
 
-/* ** MODIFIED: main is now a flex container and doesn't scroll ** */
+/* ** MODIFIED: main now grows and manages its children's layout ** */
 main {
     padding: 15px;
-    flex-grow: 1;
-    display: flex; /* Use flexbox */
-    flex-direction: column; /* Stack children vertically */
-    overflow: hidden; /* Hide any accidental overflow */
+    flex-grow: 1; /* Allows main to take up all available space */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Important: this prevents main itself from scrolling */
 }
 
 /* 4. Forms, Inputs & Buttons */
@@ -96,11 +105,10 @@ h3 { margin-top: 0; color: #eee; }
 }
 .meal-subtotal { font-size: 0.8em; color: #aaa; font-weight: normal; }
 
-/* ** NEW: This is now the scrolling element ** */
 .scrollable-list-container {
-    flex-grow: 1; /* It will take up all remaining vertical space */
-    overflow-y: auto; /* It will only scroll if its content is too tall */
-    padding-bottom: 10px; /* Some space at the very bottom of the scroll */
+    flex-grow: 1; /* This makes the container take up all remaining space in main */
+    overflow-y: auto; /* This makes ONLY the list scrollable */
+    padding-bottom: 10px;
 }
 .food-item, .db-food-item { padding: 12px 5px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
 
@@ -123,7 +131,6 @@ h3 { margin-top: 0; color: #eee; }
 }
 .edit-btn:hover { background-color: #2980b9; color: white; }
 .delete-btn:hover { background-color: #e74c3c; color: white; }
-.quick-add-btn:hover { background-color: #4CAF50; color: white; }
 .text-btn { background: none; border: none; color: #4CAF50; cursor: pointer; font-size: 14px; font-weight: 600; }
 
 /* 8. Footers */
@@ -131,7 +138,7 @@ h3 { margin-top: 0; color: #eee; }
     padding: 10px 15px; 
     background-color: #2a2a2a; 
     border-top: 1px solid #333; 
-    margin-top: auto;
+    /* This element no longer needs margin-top: auto because its parent (.page) is a flex container */
     padding-bottom: calc(10px + env(safe-area-inset-bottom));
 }
 #date-nav { display: flex; justify-content: space-between; align-items: center; }
