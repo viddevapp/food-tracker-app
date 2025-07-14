@@ -40,7 +40,8 @@
                 <form id="add-food-form">
                     <div class="autocomplete-container">
                         <input type="text" id="food-name" placeholder="Type a food name..." autocomplete="off" required>
-                        <div id="autocomplete-results"></div>
+                        <!-- ** FIXED: Added inline style to hide this element by default ** -->
+                        <div id="autocomplete-results" style="display: none;"></div>
                     </div>
                     <div class="inputs-grid">
                         <input type="number" id="calories" placeholder="Calories" required>
@@ -77,7 +78,6 @@
             </main>
             
             <div id="tracker-footer">
-                <!-- ** MODIFIED: Simplified the date navigation structure ** -->
                 <div id="date-nav">
                     <button id="prev-day-btn" aria-label="Previous Day"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/></svg></button>
                     <button id="date-display-btn" class="date-display">Today</button>
@@ -86,8 +86,6 @@
             </div>
         </div>
 
-        <!-- Other pages remain the same... -->
-        
         <!-- Page 2: Food Database -->
         <div id="database-page" class="page">
              <main>
