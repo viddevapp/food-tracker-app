@@ -2,7 +2,6 @@
 let currentDate = new Date();
 let myChart = null;
 let editingState = { isEditing: false, dateKey: null, meal: null, index: -1 };
-// ** NEW: State for DB editing and sorting **
 let dbEditingState = { isEditing: false, id: null };
 let currentDbSort = 'name-asc';
 
@@ -46,7 +45,7 @@ const dbCaloriesInput = document.getElementById('db-calories');
 const dbProteinInput = document.getElementById('db-protein');
 const dbSubmitBtn = document.getElementById('db-submit-btn');
 const dbFoodListDiv = document.getElementById('db-food-list');
-const dbSortSelect = document.getElementById('db-sort-select'); // ** NEW **
+const dbSortSelect = document.getElementById('db-sort-select');
 
 const actionsMenuBtn = document.getElementById('actions-menu-btn');
 const actionsDropdown = document.getElementById('actions-dropdown');
@@ -95,7 +94,6 @@ function resetForm() {
     editingState = { isEditing: false, dateKey: null, meal: null, index: -1 };
 }
 
-// ** NEW: Function to reset the database form **
 function resetDbForm() {
     addToDbForm.reset();
     dbSubmitBtn.textContent = 'Save to Database';
@@ -173,9 +171,8 @@ function renderDailyEntries() {
     proteinProgressBar.style.width = `${proteinPercent}%`;
 }
 
-// ** MODIFIED: This function now sorts the database before rendering **
 function renderFoodDatabase() {
-    const sortedDb = [...allData.foodDatabase]; // Create a copy to sort
+    const sortedDb = [...allData.foodDatabase];
     switch(currentDbSort) {
         case 'calories-desc':
             sortedDb.sort((a, b) => b.calories - a.calories);
@@ -193,7 +190,6 @@ function renderFoodDatabase() {
     sortedDb.forEach(food => {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'db-food-item';
-        // ** MODIFIED: Button is now an "Edit" button **
         itemDiv.innerHTML = `
             <span>${food.name} (${food.calories} kcal / ${food.protein}g)</span>
             <div class="item-actions">
@@ -312,7 +308,6 @@ function handleDailyListClick(event) {
     }
 }
 
-// ** MODIFIED: This function now handles both Add and Update for the DB **
 function handleAddOrUpdateDbEntry(event) {
     event.preventDefault();
     const name = dbFoodNameInput.value.trim();
@@ -322,7 +317,6 @@ function handleAddOrUpdateDbEntry(event) {
     if (!name || isNaN(calories) || isNaN(protein)) return alert("Please enter valid data.");
     
     if (dbEditingState.isEditing) {
-        // Update existing food
         const foodToUpdate = allData.foodDatabase.find(food => food.id === dbEditingState.id);
         if (foodToUpdate) {
             foodToUpdate.name = name;
@@ -330,7 +324,6 @@ function handleAddOrUpdateDbEntry(event) {
             foodToUpdate.protein = protein;
         }
     } else {
-        // Add new food
         allData.foodDatabase.push({ id: Date.now(), name, calories, protein });
     }
 
@@ -338,7 +331,6 @@ function handleAddOrUpdateDbEntry(event) {
     resetDbForm();
 }
 
-// ** MODIFIED: This now handles Edit or Delete for the DB list **
 function handleDatabaseListClick(event) {
     const target = event.target.closest('.item-action-btn');
     if (!target) return;
@@ -357,7 +349,6 @@ function handleDatabaseListClick(event) {
         dbSubmitBtn.textContent = 'Update Food';
         dbEditingState = { isEditing: true, id: food.id };
         
-        // Scroll to top to see the form
         databasePage.querySelector('main').scrollTop = 0;
     }
 }
@@ -426,6 +417,7 @@ function saveDataToFile() {
     link.click();
 }
 
+// ** MODIFIED: The file input no longer specifies an accept type **
 function loadDataFromFile(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -433,11 +425,17 @@ function loadDataFromFile(event) {
     reader.onload = function(e) {
         try {
             allData = JSON.parse(e.target.result);
+            // Basic validation and migration can be added here if needed
+            if (!allData.history || !allData.foodDatabase || !allData.userGoals) {
+                throw new Error("Invalid data file format.");
+            }
             currentDate = new Date();
             resetForm();
+            resetDbForm();
             renderAll();
         } catch (error) {
-            alert('Error reading or parsing file.');
+            alert('Error reading or parsing file. Please make sure you selected the correct data file.');
+            console.error(error);
         }
     };
     reader.readAsText(file);
@@ -451,9 +449,9 @@ navReports.addEventListener('click', () => showPage('reports-page'));
 addFoodForm.addEventListener('submit', handleAddOrUpdateDailyEntry);
 foodNameInput.addEventListener('input', handleAutocomplete);
 dailyFoodListDiv.addEventListener('click', handleDailyListClick);
-
 addToDbForm.addEventListener('submit', handleAddOrUpdateDbEntry);
 dbFoodListDiv.addEventListener('click', handleDatabaseListClick);
+
 dbSortSelect.addEventListener('change', (event) => {
     currentDbSort = event.target.value;
     renderFoodDatabase();
