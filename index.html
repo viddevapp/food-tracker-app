@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Tracker</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <div id="app-container">
+        <!-- Main Navigation -->
+        <nav>
+            <div class="nav-tabs">
+                <button id="nav-tracker" class="nav-btn active">Tracker</button>
+                <button id="nav-database" class="nav-btn">Database</button>
+                <button id="nav-reports" class="nav-btn">Reports</button>
+            </div>
+            <div class="nav-actions">
+                <div id="actions-menu-container">
+                    <button id="actions-menu-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                    </button>
+                    <div id="actions-dropdown" class="hidden">
+                        <button id="load-data-btn">Load Data</button>
+                        <button id="save-data-btn">Save Data</button>
+                    </div>
+                </div>
+            </div>
+            <input type="file" id="file-loader" style="display: none;">
+        </nav>
+
+        <!-- Page 1: Daily Tracker -->
+        <div id="tracker-page" class="page active">
+            <main>
+                <form id="add-food-form">
+                    <div class="autocomplete-container">
+                        <input type="text" id="food-name" placeholder="Type a food name..." autocomplete="off">
+                        <div id="autocomplete-results"></div>
+                    </div>
+                    <div class="inputs-row">
+                        <input type="number" id="calories" placeholder="Calories">
+                        <input type="number" id="protein" placeholder="Protein (g)">
+                    </div>
+                    <div class="inputs-row">
+                        <input type="number" id="servings" placeholder="Servings" value="1" step="any">
+                        <select id="meal-select">
+                            <option value="" disabled selected>Choose a meal...</option>
+                            <option value="breakfast">Breakfast</option>
+                            <option value="lunch">Lunch</option>
+                            <option value="dinner">Dinner</option>
+                            <option value="snack">Snack</option>
+                        </select>
+                    </div>
+                    <button type="submit" id="submit-entry-btn" class="btn-primary">Add to Day</button>
+                </form>
+
+                <div id="totals">
+                    <div class="section-header">
+                        <h2>Day's Goals</h2>
+                        <button id="edit-goals-btn" class="text-btn">Edit Goals</button>
+                    </div>
+                    <div class="goal-stat">
+                        <div class="goal-label"><span>Calories</span><span id="total-calories-text">0 / 2000 kcal</span></div>
+                        <div class="progress-bar-background"><div id="calories-progress-bar" class="progress-bar-fill"></div></div>
+                    </div>
+                    <div class="goal-stat">
+                        <div class="goal-label"><span>Protein</span><span id="total-protein-text">0 / 120 g</span></div>
+                        <div class="progress-bar-background"><div id="protein-progress-bar" class="progress-bar-fill"></div></div>
+                    </div>
+                </div>
+
+                <div id="daily-food-list"></div>
+            </main>
+            
+            <div id="tracker-footer">
+                <div id="date-nav">
+                    <button id="prev-day-btn"><</button>
+                    <div id="current-date-display">Today</div>
+                    <button id="next-day-btn">></button>
+                    <button id="today-btn">Today</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Page 2: Food Database -->
+        <div id="database-page" class="page">
+             <main>
+                <form id="add-to-db-form">
+                    <h3>Add/Edit Food</h3>
+                    <input type="text" id="db-food-name" placeholder="Food Name" required>
+                    <div class="inputs-row">
+                        <input type="number" id="db-calories" placeholder="Calories" required>
+                        <input type="number" id="db-protein" placeholder="Protein (g)" required>
+                    </div>
+                    <button type="submit" id="db-submit-btn" class="btn-primary">Save to Database</button>
+                </form>
+                <div id="db-list-container">
+                    <div class="section-header">
+                        <h2>My Foods</h2>
+                        <!-- ** NEW: Sorting Dropdown ** -->
+                        <div class="sort-container">
+                            <label for="db-sort-select">Sort by:</label>
+                            <select id="db-sort-select">
+                                <option value="name-asc">Name (A-Z)</option>
+                                <option value="calories-desc">Calories (High-Low)</option>
+                                <option value="protein-desc">Protein (High-Low)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="db-food-list"></div>
+                </div>
+            </main>
+        </div>
+        
+        <!-- Page 3: Reports -->
+        <div id="reports-page" class="page">
+            <main>
+                <h2>Last 7 Days - Calorie Breakdown</h2>
+                <div class="chart-container">
+                    <canvas id="calories-chart"></canvas>
+                </div>
+                <div id="reports-summary">
+                    <h3>7-Day Summary</h3>
+                    <p>
+                        <span>Total Calories Consumed:</span>
+                        <span id="reports-total-calories">0</span>
+                    </p>
+                    <p>
+                        <span>Your Weekly Goal:</span>
+                        <span id="reports-weekly-goal">0</span>
+                    </p>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <h2>Edit Your Daily Goals</h2>
+            <form id="settings-form">
+                <label for="goal-calories">Calorie Goal</label>
+                <input type="number" id="goal-calories" placeholder="e.g., 2000">
+                <label for="goal-protein">Protein Goal (g)</label>
+                <input type="number" id="goal-protein" placeholder="e.g., 120">
+                <div class="modal-actions">
+                    <button type="button" id="cancel-settings-btn" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Goals</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
