@@ -37,8 +37,7 @@ const proteinProgressBar = document.getElementById('protein-progress-bar');
 
 const prevDayBtn = document.getElementById('prev-day-btn');
 const nextDayBtn = document.getElementById('next-day-btn');
-const todayBtn = document.getElementById('today-btn');
-const currentDateDisplay = document.getElementById('current-date-display');
+const dateDisplayBtn = document.getElementById('date-display-btn');
 
 const addToDbForm = document.getElementById('add-to-db-form');
 const dbFoodNameInput = document.getElementById('db-food-name');
@@ -50,7 +49,6 @@ const dbSortSelect = document.getElementById('db-sort-select');
 
 const actionsMenuBtn = document.getElementById('actions-menu-btn');
 const actionsDropdown = document.getElementById('actions-dropdown');
-// ** MODIFIED: IDs changed for new buttons **
 const exportDataBtn = document.getElementById('export-data-btn');
 const importDataBtn = document.getElementById('import-data-btn');
 const fileLoaderInput = document.getElementById('file-loader');
@@ -67,6 +65,10 @@ const dailyBarChartCanvas = document.getElementById('daily-bar-chart');
 
 
 // --- 2. CORE LOGIC & HELPER FUNCTIONS ---
+function getCssVariable(variable) {
+    return getComputedStyle(document.documentElement).getPropertyValue(variable).trim();
+}
+
 function getFormattedDate(date) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -133,10 +135,23 @@ function renderAll() {
 
 function renderDateControls() {
     const today = new Date();
-    const isToday = getFormattedDate(currentDate) === getFormattedDate(today);
-    currentDateDisplay.textContent = isToday ? 'Today' : currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    nextDayBtn.disabled = isToday;
-    todayBtn.style.display = isToday ? 'none' : 'block';
+    today.setHours(0, 0, 0, 0);
+    currentDate.setHours(0, 0, 0, 0);
+
+    const isToday = (currentDate.getTime() === today.getTime());
+
+    dateDisplayBtn.disabled = isToday;
+    nextDayBtn.disabled = currentDate >= today;
+
+    if (isToday) {
+        dateDisplayBtn.textContent = 'Today';
+    } else {
+        dateDisplayBtn.textContent = currentDate.toLocaleDateString('en-US', {
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric'
+        });
+    }
 }
 
 function renderDailyEntries() {
@@ -145,12 +160,16 @@ function renderDailyEntries() {
     const goals = currentDayData.goals;
     
     dailyFoodListDiv.innerHTML = '';
+    
     let grandTotalCalories = 0;
     let grandTotalProtein = 0;
+    let hasEntries = false;
+    let listContainer = document.createElement('div');
 
     for (const meal in entriesByMeal) {
         const mealEntries = entriesByMeal[meal];
         if (mealEntries.length > 0) {
+            hasEntries = true;
             const mealCalories = mealEntries.reduce((sum, entry) => sum + entry.calories, 0);
             const mealProtein = mealEntries.reduce((sum, entry) => sum + entry.protein, 0);
             grandTotalCalories += mealCalories;
@@ -158,32 +177,38 @@ function renderDailyEntries() {
 
             const mealHeader = document.createElement('h3');
             mealHeader.className = 'meal-header';
+            // ** FIXED: Removed the unwanted "P" from the end of the line **
             mealHeader.innerHTML = `
                 <span>${meal.charAt(0).toUpperCase() + meal.slice(1)}</span>
                 <span class="meal-subtotal">${mealCalories.toFixed(0)} kcal / ${mealProtein.toFixed(1)}g</span>
             `;
-            dailyFoodListDiv.appendChild(mealHeader);
+            listContainer.appendChild(mealHeader);
 
             mealEntries.forEach((entry, index) => {
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'food-item';
                 itemDiv.innerHTML = `
                     <div>
-                        <span>${entry.name}</span><br>
-                        <small style="color: #aaa;">${entry.calories.toFixed(0)} kcal / ${entry.protein.toFixed(1)}g protein</small>
+                        <span class="food-item-name">${entry.name}</span>
+                        <small class="food-item-stats">${entry.calories.toFixed(0)} kcal / ${entry.protein.toFixed(1)}g protein</small>
                     </div>
                     <div class="item-actions">
                         <button class="item-action-btn edit-btn" data-meal="${meal}" data-index="${index}">Edit</button>
                         <button class="item-action-btn delete-btn" data-meal="${meal}" data-index="${index}">Delete</button>
                     </div>
                 `;
-                dailyFoodListDiv.appendChild(itemDiv);
+                listContainer.appendChild(itemDiv);
             });
         }
     }
 
-    const caloriePercent = Math.min((grandTotalCalories / goals.calories) * 100, 100);
-    const proteinPercent = Math.min((grandTotalProtein / goals.protein) * 100, 100);
+    if (hasEntries) {
+        listContainer.className = 'card';
+        dailyFoodListDiv.appendChild(listContainer);
+    }
+
+    const caloriePercent = Math.min((grandTotalCalories / (goals.calories || 1)) * 100, 100);
+    const proteinPercent = Math.min((grandTotalProtein / (goals.protein || 1)) * 100, 100);
     totalCaloriesText.textContent = `${grandTotalCalories.toFixed(0)} / ${goals.calories} kcal`;
     totalProteinText.textContent = `${grandTotalProtein.toFixed(1)} / ${goals.protein} g`;
     caloriesProgressBar.style.width = `${caloriePercent}%`;
@@ -203,7 +228,10 @@ function renderFoodDatabase() {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'db-food-item';
         itemDiv.innerHTML = `
-            <span>${food.name} (${food.calories} kcal / ${food.protein}g)</span>
+            <div>
+                <span class="food-item-name">${food.name}</span>
+                <small class="food-item-stats">${food.calories} kcal / ${food.protein}g protein</small>
+            </div>
             <div class="item-actions">
                 <button class="item-action-btn edit-btn" data-id="${food.id}">Edit</button>
                 <button class="item-action-btn delete-btn" data-id="${food.id}">Delete</button>
@@ -216,6 +244,11 @@ function renderFoodDatabase() {
 function renderReportsPage() {
     if (doughnutChart) doughnutChart.destroy();
     if (barChart) barChart.destroy();
+
+    const primaryColor = getCssVariable('--color-primary');
+    const accentColor = getCssVariable('--color-accent');
+    const surfaceColor = getCssVariable('--color-surface');
+    const textColor = getCssVariable('--color-text-secondary');
     
     const labels = [];
     const dailyCalorieData = [];
@@ -250,19 +283,24 @@ function renderReportsPage() {
                 {
                     label: 'Calories',
                     data: dailyCalorieData,
-                    backgroundColor: '#4CAF50',
+                    backgroundColor: accentColor,
+                    borderRadius: 4,
                 },
                 {
                     label: 'Protein (g)',
                     data: dailyProteinData,
-                    backgroundColor: '#2980b9',
+                    backgroundColor: primaryColor,
+                    borderRadius: 4,
                 }
             ]
         },
         options: {
             responsive: true, maintainAspectRatio: false,
-            scales: { y: { beginAtZero: true, ticks: { color: '#ccc' } }, x: { ticks: { color: '#ccc' } } },
-            plugins: { legend: { labels: { color: '#ccc' } } }
+            scales: { 
+                y: { beginAtZero: true, ticks: { color: textColor }, grid: { color: 'rgba(255, 255, 255, 0.05)' } }, 
+                x: { ticks: { color: textColor }, grid: { display: false } } 
+            },
+            plugins: { legend: { labels: { color: textColor, font: { size: 14 } } } }
         }
     });
 
@@ -273,18 +311,28 @@ function renderReportsPage() {
     doughnutChart = new Chart(caloriesDoughnutChartCanvas, {
         type: 'doughnut',
         data: {
-            labels: ['Consumed', 'Remaining'],
+            labels: ['Calories Consumed', 'Weekly Goal Remaining'],
             datasets: [{
-                label: 'Calories', data: [totalCaloriesConsumed, caloriesRemaining],
-                backgroundColor: ['#4CAF50', '#444'], borderColor: '#1e1e1e', borderWidth: 2
+                data: [totalCaloriesConsumed, caloriesRemaining],
+                backgroundColor: [accentColor, surfaceColor],
+                borderColor: getCssVariable('--color-background'),
+                borderWidth: 4,
+                hoverOffset: 8
             }]
         },
         options: {
             responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { position: 'bottom', labels: { color: '#ccc' } } }
+            cutout: '70%',
+            plugins: { 
+                legend: { 
+                    position: 'bottom', 
+                    labels: { color: textColor, font: { size: 14 }, padding: 20 } 
+                } 
+            }
         }
     });
 }
+
 
 // --- 4. EVENT HANDLER FUNCTIONS ---
 function showPage(pageId) {
@@ -328,12 +376,12 @@ function handleAddOrUpdateDailyEntry(event) {
         const foodExists = allData.foodDatabase.some(food => food.name.toLowerCase() === name.toLowerCase());
         if (!foodExists) {
             allData.foodDatabase.push({ id: Date.now(), name, calories, protein });
+            renderFoodDatabase();
         }
     }
     
-    saveDataToLocalStorage(); // ** NEW: Auto-save data
+    saveDataToLocalStorage();
     renderDailyEntries();
-    renderFoodDatabase();
     resetForm();
 }
 
@@ -348,7 +396,7 @@ function handleDailyListClick(event) {
 
     if (target.classList.contains('delete-btn')) {
         currentDayData.entries[meal].splice(index, 1);
-        saveDataToLocalStorage(); // ** NEW: Auto-save data
+        saveDataToLocalStorage();
         renderDailyEntries();
     } else if (target.classList.contains('edit-btn')) {
         const baseFood = allData.foodDatabase.find(f => f.name === entry.baseName) || {calories: entry.calories / entry.servings, protein: entry.protein / entry.servings};
@@ -360,7 +408,9 @@ function handleDailyListClick(event) {
         
         submitEntryBtn.textContent = 'Update Entry';
         editingState = { isEditing: true, dateKey: getFormattedDate(currentDate), meal, index };
+        
         validateTrackerForm();
+        foodNameInput.focus();
     }
 }
 
@@ -383,7 +433,7 @@ function handleAddOrUpdateDbEntry(event) {
         allData.foodDatabase.push({ id: Date.now(), name, calories, protein });
     }
 
-    saveDataToLocalStorage(); // ** NEW: Auto-save data
+    saveDataToLocalStorage();
     renderFoodDatabase();
     resetDbForm();
 }
@@ -400,7 +450,7 @@ function handleDatabaseListClick(event) {
         if (dbEditingState.isEditing && dbEditingState.id === foodId) {
             resetDbForm();
         }
-        saveDataToLocalStorage(); // ** NEW: Auto-save data
+        saveDataToLocalStorage();
         renderFoodDatabase();
     } else if (target.classList.contains('edit-btn')) {
         dbFoodNameInput.value = food.name;
@@ -410,8 +460,8 @@ function handleDatabaseListClick(event) {
         dbSubmitBtn.textContent = 'Update Food';
         dbEditingState = { isEditing: true, id: food.id };
         
-        databasePage.querySelector('main').scrollTop = 0;
         validateDbForm();
+        dbFoodNameInput.focus();
     }
 }
 
@@ -436,6 +486,7 @@ function handleAutocomplete() {
                 autocompleteResults.innerHTML = '';
                 autocompleteResults.style.display = 'none';
                 validateTrackerForm();
+                servingsInput.focus();
             };
             autocompleteResults.appendChild(itemDiv);
         });
@@ -455,7 +506,7 @@ function handleSaveSettings(event) {
     const currentDayData = getCurrentDayData();
     currentDayData.goals = { ...allData.userGoals };
 
-    saveDataToLocalStorage(); // ** NEW: Auto-save data
+    saveDataToLocalStorage();
     closeSettingsModal();
     renderAll();
 }
@@ -471,8 +522,6 @@ function closeSettingsModal() {
 }
 
 // --- 5. DATA PERSISTENCE & IMPORT/EXPORT ---
-
-// ** NEW: Save all data to the browser's local storage **
 function saveDataToLocalStorage() {
     try {
         localStorage.setItem('foodTrackerData', JSON.stringify(allData));
@@ -482,13 +531,11 @@ function saveDataToLocalStorage() {
     }
 }
 
-// ** NEW: Load data from local storage when the app starts **
 function loadDataFromLocalStorage() {
     const savedData = localStorage.getItem('foodTrackerData');
     if (savedData) {
         try {
             const parsedData = JSON.parse(savedData);
-            // Basic validation to ensure the loaded data has the expected structure
             if (parsedData.foodDatabase && parsedData.history && parsedData.userGoals) {
                 allData = parsedData;
             } else {
@@ -496,12 +543,10 @@ function loadDataFromLocalStorage() {
             }
         } catch (error) {
             console.error("Could not parse data from localStorage", error);
-            alert("Could not load saved data. It may be corrupted.");
         }
     }
 }
 
-// ** MODIFIED: Renamed from saveDataToFile to exportDataToFile **
 function exportDataToFile() {
     const dataAsString = JSON.stringify(allData, null, 2);
     const blob = new Blob([dataAsString], { type: 'application/json' });
@@ -515,7 +560,6 @@ function exportDataToFile() {
     URL.revokeObjectURL(url);
 }
 
-// ** MODIFIED: Renamed from loadDataFromFile to importDataFromFile **
 function importDataFromFile(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -526,18 +570,19 @@ function importDataFromFile(event) {
             if (!importedData.history || !importedData.foodDatabase || !importedData.userGoals) {
                 throw new Error("Invalid data file format.");
             }
-            allData = importedData;
-            currentDate = new Date();
-            saveDataToLocalStorage(); // ** NEW: Persist the newly imported data
-            resetForm();
-            resetDbForm();
-            renderAll();
-            alert("Data imported successfully!");
+            if (confirm("This will overwrite all current data. Are you sure you want to proceed?")) {
+                allData = importedData;
+                currentDate = new Date();
+                saveDataToLocalStorage();
+                resetForm();
+                resetDbForm();
+                renderAll();
+                alert("Data imported successfully!");
+            }
         } catch (error) {
             alert('Error reading or parsing file. Please make sure you selected a valid backup file.');
             console.error(error);
         } finally {
-            // Reset the file input so the 'change' event fires again for the same file
             fileLoaderInput.value = "";
         }
     };
@@ -562,32 +607,38 @@ dbSortSelect.addEventListener('change', (event) => {
 
 prevDayBtn.addEventListener('click', () => changeDate(-1));
 nextDayBtn.addEventListener('click', () => changeDate(1));
-todayBtn.addEventListener('click', () => { currentDate = new Date(); renderAll(); });
+dateDisplayBtn.addEventListener('click', () => {
+    if (dateDisplayBtn.disabled) return;
+    currentDate = new Date();
+    renderAll();
+});
 
 editGoalsBtn.addEventListener('click', openSettingsModal);
 cancelSettingsBtn.addEventListener('click', closeSettingsModal);
 settingsForm.addEventListener('submit', handleSaveSettings);
 
 actionsMenuBtn.addEventListener('click', () => actionsDropdown.classList.toggle('hidden'));
-// ** MODIFIED: Listeners point to new functions and hide menu on click **
 exportDataBtn.addEventListener('click', () => { exportDataToFile(); actionsDropdown.classList.add('hidden'); });
 importDataBtn.addEventListener('click', () => { fileLoaderInput.click(); actionsDropdown.classList.add('hidden'); });
 fileLoaderInput.addEventListener('change', importDataFromFile);
 
 document.addEventListener('click', (event) => {
     if (!event.target.closest('#actions-menu-container')) actionsDropdown.classList.add('hidden');
-    if (!event.target.closest('.autocomplete-container')) autocompleteResults.innerHTML = '';
-    if (!event.target.closest('.modal-content') && !event.target.closest('#edit-goals-btn')) closeSettingsModal();
+    if (!event.target.closest('.autocomplete-container')) {
+        autocompleteResults.style.display = 'none';
+    }
+    if (!event.target.closest('.modal-content') && !event.target.closest('#edit-goals-btn')) {
+        closeSettingsModal();
+    }
 });
 
 addFoodForm.addEventListener('input', validateTrackerForm);
 addFoodForm.addEventListener('change', validateTrackerForm);
 addToDbForm.addEventListener('input', validateDbForm);
 
-
 // --- 7. INITIALIZE APP ---
 function initializeApp() {
-    loadDataFromLocalStorage(); // ** NEW: Load data on startup
+    loadDataFromLocalStorage();
     showPage('tracker-page');
     validateTrackerForm();
     validateDbForm();

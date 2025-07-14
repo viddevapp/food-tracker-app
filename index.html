@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Food Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="script.js" defer></script>
@@ -19,7 +22,7 @@
             </div>
             <div class="nav-actions">
                 <div id="actions-menu-container">
-                    <button id="actions-menu-btn">
+                    <button id="actions-menu-btn" aria-label="Actions Menu">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
                     </button>
                     <div id="actions-dropdown" class="hidden">
@@ -39,11 +42,9 @@
                         <input type="text" id="food-name" placeholder="Type a food name..." autocomplete="off" required>
                         <div id="autocomplete-results"></div>
                     </div>
-                    <div class="inputs-row">
+                    <div class="inputs-grid">
                         <input type="number" id="calories" placeholder="Calories" required>
                         <input type="number" id="protein" placeholder="Protein (g)" required>
-                    </div>
-                    <div class="inputs-row">
                         <input type="number" id="servings" placeholder="Servings" value="1" step="any">
                         <select id="meal-select" required>
                             <option value="" disabled selected>Choose a meal...</option>
@@ -56,9 +57,8 @@
                     <button type="submit" id="submit-entry-btn" class="btn-primary" disabled>Add to Day</button>
                 </form>
 
-                <!-- ** MODIFIED: New wrapper for scrollable content ** -->
                 <div class="scrollable-content">
-                    <div id="totals">
+                    <div id="totals" class="card">
                         <div class="section-header">
                             <h2>Day's Goals</h2>
                             <button id="edit-goals-btn" class="text-btn">Edit Goals</button>
@@ -72,34 +72,36 @@
                             <div class="progress-bar-background"><div id="protein-progress-bar" class="progress-bar-fill"></div></div>
                         </div>
                     </div>
-
                     <div id="daily-food-list"></div>
                 </div>
-                 <!-- ** MODIFIED: Removed the old scrollable-list-container ** -->
             </main>
             
             <div id="tracker-footer">
+                <!-- ** MODIFIED: Simplified the date navigation structure ** -->
                 <div id="date-nav">
-                    <button id="prev-day-btn"><</button>
-                    <div id="current-date-display">Today</div>
-                    <button id="next-day-btn">></button>
-                    <button id="today-btn">Today</button>
+                    <button id="prev-day-btn" aria-label="Previous Day"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/></svg></button>
+                    <button id="date-display-btn" class="date-display">Today</button>
+                    <button id="next-day-btn" aria-label="Next Day"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg></button>
                 </div>
             </div>
         </div>
 
+        <!-- Other pages remain the same... -->
+        
         <!-- Page 2: Food Database -->
         <div id="database-page" class="page">
              <main>
-                <form id="add-to-db-form">
+                <div class="card">
                     <h3>Add/Edit Food</h3>
-                    <input type="text" id="db-food-name" placeholder="Food Name" required>
-                    <div class="inputs-row">
-                        <input type="number" id="db-calories" placeholder="Calories" required>
-                        <input type="number" id="db-protein" placeholder="Protein (g)" required>
-                    </div>
-                    <button type="submit" id="db-submit-btn" class="btn-primary" disabled>Save to Database</button>
-                </form>
+                    <form id="add-to-db-form">
+                        <input type="text" id="db-food-name" placeholder="Food Name" required>
+                        <div class="inputs-row">
+                            <input type="number" id="db-calories" placeholder="Calories" required>
+                            <input type="number" id="db-protein" placeholder="Protein (g)" required>
+                        </div>
+                        <button type="submit" id="db-submit-btn" class="btn-primary" disabled>Save to Database</button>
+                    </form>
+                </div>
                 <div id="db-list-container">
                     <div class="section-header">
                         <h2>My Foods</h2>
@@ -112,7 +114,7 @@
                             </select>
                         </div>
                     </div>
-                    <div id="db-food-list"></div>
+                    <div id="db-food-list" class="card"></div>
                 </div>
             </main>
         </div>
@@ -120,14 +122,18 @@
         <!-- Page 3: Reports -->
         <div id="reports-page" class="page">
             <main>
-                <h2>Last 7 Days - Daily Totals</h2>
-                <div class="chart-container">
-                    <canvas id="daily-bar-chart"></canvas>
+                <div class="card">
+                    <h2>Last 7 Days - Daily Totals</h2>
+                    <div class="chart-container">
+                        <canvas id="daily-bar-chart"></canvas>
+                    </div>
                 </div>
                 
-                <h2 class="reports-header-secondary">Weekly Calorie Breakdown</h2>
-                <div class="chart-container">
-                    <canvas id="calories-doughnut-chart"></canvas>
+                 <div class="card">
+                    <h2 class="reports-header-secondary">Weekly Breakdown</h2>
+                    <div class="chart-container">
+                        <canvas id="calories-doughnut-chart"></canvas>
+                    </div>
                 </div>
             </main>
         </div>
