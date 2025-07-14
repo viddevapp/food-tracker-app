@@ -22,9 +22,10 @@
                     <button id="actions-menu-btn">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
                     </button>
+                    <!-- ** MODIFIED: Button text and IDs changed for Import/Export ** -->
                     <div id="actions-dropdown" class="hidden">
-                        <button id="load-data-btn">Load Data</button>
-                        <button id="save-data-btn">Save Data</button>
+                        <button id="import-data-btn">Import Data</button>
+                        <button id="export-data-btn">Export Data</button>
                     </div>
                 </div>
             </div>
@@ -53,7 +54,6 @@
                             <option value="snack">Snack</option>
                         </select>
                     </div>
-                    <!-- ** MODIFIED: Added the 'disabled' attribute ** -->
                     <button type="submit" id="submit-entry-btn" class="btn-primary" disabled>Add to Day</button>
                 </form>
 
@@ -97,7 +97,6 @@
                         <input type="number" id="db-calories" placeholder="Calories" required>
                         <input type="number" id="db-protein" placeholder="Protein (g)" required>
                     </div>
-                    <!-- ** MODIFIED: Added the 'disabled' attribute ** -->
                     <button type="submit" id="db-submit-btn" class="btn-primary" disabled>Save to Database</button>
                 </form>
                 <div id="db-list-container">

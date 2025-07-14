@@ -50,8 +50,9 @@ const dbSortSelect = document.getElementById('db-sort-select');
 
 const actionsMenuBtn = document.getElementById('actions-menu-btn');
 const actionsDropdown = document.getElementById('actions-dropdown');
-const saveDataBtn = document.getElementById('save-data-btn');
-const loadDataBtn = document.getElementById('load-data-btn');
+// ** MODIFIED: IDs changed for new buttons **
+const exportDataBtn = document.getElementById('export-data-btn');
+const importDataBtn = document.getElementById('import-data-btn');
 const fileLoaderInput = document.getElementById('file-loader');
 
 const editGoalsBtn = document.getElementById('edit-goals-btn');
@@ -93,7 +94,6 @@ function resetForm() {
     addFoodForm.reset();
     submitEntryBtn.textContent = 'Add to Day';
     editingState = { isEditing: false, dateKey: null, meal: null, index: -1 };
-    // ** NEW: Validate the form to disable the button after reset **
     validateTrackerForm();
 }
 
@@ -101,35 +101,22 @@ function resetDbForm() {
     addToDbForm.reset();
     dbSubmitBtn.textContent = 'Save to Database';
     dbEditingState = { isEditing: false, id: null };
-    // ** NEW: Validate the form to disable the button after reset **
     validateDbForm();
 }
 
-// ** NEW: Function to validate the main tracker form **
 function validateTrackerForm() {
     const name = foodNameInput.value.trim();
     const calories = caloriesInput.value;
     const protein = proteinInput.value;
     const meal = mealSelect.value;
-
-    if (name && calories && protein && meal) {
-        submitEntryBtn.disabled = false;
-    } else {
-        submitEntryBtn.disabled = true;
-    }
+    submitEntryBtn.disabled = !(name && calories && protein && meal);
 }
 
-// ** NEW: Function to validate the database form **
 function validateDbForm() {
     const name = dbFoodNameInput.value.trim();
     const calories = dbCaloriesInput.value;
     const protein = dbProteinInput.value;
-
-    if (name && calories && protein) {
-        dbSubmitBtn.disabled = false;
-    } else {
-        dbSubmitBtn.disabled = true;
-    }
+    dbSubmitBtn.disabled = !(name && calories && protein);
 }
 
 // --- 3. RENDERING FUNCTIONS ---
@@ -141,7 +128,6 @@ function renderAll() {
     } else if (activePageId === 'nav-reports') {
         renderReportsPage();
     }
-    // Always render the database in the background so it's ready
     renderFoodDatabase();
 }
 
@@ -319,7 +305,6 @@ function handleAddOrUpdateDailyEntry(event) {
     const servings = parseFloat(servingsInput.value) || 1;
     const meal = mealSelect.value;
 
-    // The button validation already prevents this, but it's good practice to keep server-side style validation.
     if (!meal || !name || isNaN(calories) || isNaN(protein)) return;
 
     const newEntry = {
@@ -343,11 +328,12 @@ function handleAddOrUpdateDailyEntry(event) {
         const foodExists = allData.foodDatabase.some(food => food.name.toLowerCase() === name.toLowerCase());
         if (!foodExists) {
             allData.foodDatabase.push({ id: Date.now(), name, calories, protein });
-            renderFoodDatabase();
         }
     }
     
+    saveDataToLocalStorage(); // ** NEW: Auto-save data
     renderDailyEntries();
+    renderFoodDatabase();
     resetForm();
 }
 
@@ -362,6 +348,7 @@ function handleDailyListClick(event) {
 
     if (target.classList.contains('delete-btn')) {
         currentDayData.entries[meal].splice(index, 1);
+        saveDataToLocalStorage(); // ** NEW: Auto-save data
         renderDailyEntries();
     } else if (target.classList.contains('edit-btn')) {
         const baseFood = allData.foodDatabase.find(f => f.name === entry.baseName) || {calories: entry.calories / entry.servings, protein: entry.protein / entry.servings};
@@ -373,8 +360,6 @@ function handleDailyListClick(event) {
         
         submitEntryBtn.textContent = 'Update Entry';
         editingState = { isEditing: true, dateKey: getFormattedDate(currentDate), meal, index };
-        
-        // ** NEW: Validate the form when populating it for an edit **
         validateTrackerForm();
     }
 }
@@ -398,6 +383,7 @@ function handleAddOrUpdateDbEntry(event) {
         allData.foodDatabase.push({ id: Date.now(), name, calories, protein });
     }
 
+    saveDataToLocalStorage(); // ** NEW: Auto-save data
     renderFoodDatabase();
     resetDbForm();
 }
@@ -414,6 +400,7 @@ function handleDatabaseListClick(event) {
         if (dbEditingState.isEditing && dbEditingState.id === foodId) {
             resetDbForm();
         }
+        saveDataToLocalStorage(); // ** NEW: Auto-save data
         renderFoodDatabase();
     } else if (target.classList.contains('edit-btn')) {
         dbFoodNameInput.value = food.name;
@@ -424,8 +411,6 @@ function handleDatabaseListClick(event) {
         dbEditingState = { isEditing: true, id: food.id };
         
         databasePage.querySelector('main').scrollTop = 0;
-
-        // ** NEW: Validate the form when populating it for an edit **
         validateDbForm();
     }
 }
@@ -450,7 +435,6 @@ function handleAutocomplete() {
                 proteinInput.value = food.protein;
                 autocompleteResults.innerHTML = '';
                 autocompleteResults.style.display = 'none';
-                // ** NEW: Validate form after autocompleting **
                 validateTrackerForm();
             };
             autocompleteResults.appendChild(itemDiv);
@@ -471,6 +455,7 @@ function handleSaveSettings(event) {
     const currentDayData = getCurrentDayData();
     currentDayData.goals = { ...allData.userGoals };
 
+    saveDataToLocalStorage(); // ** NEW: Auto-save data
     closeSettingsModal();
     renderAll();
 }
@@ -485,34 +470,75 @@ function closeSettingsModal() {
     settingsModal.classList.add('hidden');
 }
 
-// --- 5. SAVE/LOAD LOGIC ---
-function saveDataToFile() {
+// --- 5. DATA PERSISTENCE & IMPORT/EXPORT ---
+
+// ** NEW: Save all data to the browser's local storage **
+function saveDataToLocalStorage() {
+    try {
+        localStorage.setItem('foodTrackerData', JSON.stringify(allData));
+    } catch (error) {
+        console.error("Could not save data to localStorage", error);
+        alert("Could not save data. Your browser's storage might be full.");
+    }
+}
+
+// ** NEW: Load data from local storage when the app starts **
+function loadDataFromLocalStorage() {
+    const savedData = localStorage.getItem('foodTrackerData');
+    if (savedData) {
+        try {
+            const parsedData = JSON.parse(savedData);
+            // Basic validation to ensure the loaded data has the expected structure
+            if (parsedData.foodDatabase && parsedData.history && parsedData.userGoals) {
+                allData = parsedData;
+            } else {
+                throw new Error("Invalid data structure in localStorage.");
+            }
+        } catch (error) {
+            console.error("Could not parse data from localStorage", error);
+            alert("Could not load saved data. It may be corrupted.");
+        }
+    }
+}
+
+// ** MODIFIED: Renamed from saveDataToFile to exportDataToFile **
+function exportDataToFile() {
     const dataAsString = JSON.stringify(allData, null, 2);
     const blob = new Blob([dataAsString], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'my-food-data.json';
+    link.download = `food-tracker-backup-${getFormattedDate(new Date())}.json`;
+    document.body.appendChild(link);
     link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
 }
 
-function loadDataFromFile(event) {
+// ** MODIFIED: Renamed from loadDataFromFile to importDataFromFile **
+function importDataFromFile(event) {
     const file = event.target.files[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = function(e) {
         try {
-            allData = JSON.parse(e.target.result);
-            if (!allData.history || !allData.foodDatabase || !allData.userGoals) {
+            const importedData = JSON.parse(e.target.result);
+            if (!importedData.history || !importedData.foodDatabase || !importedData.userGoals) {
                 throw new Error("Invalid data file format.");
             }
+            allData = importedData;
             currentDate = new Date();
+            saveDataToLocalStorage(); // ** NEW: Persist the newly imported data
             resetForm();
             resetDbForm();
             renderAll();
+            alert("Data imported successfully!");
         } catch (error) {
-            alert('Error reading or parsing file. Please make sure you selected the correct data file.');
+            alert('Error reading or parsing file. Please make sure you selected a valid backup file.');
             console.error(error);
+        } finally {
+            // Reset the file input so the 'change' event fires again for the same file
+            fileLoaderInput.value = "";
         }
     };
     reader.readAsText(file);
@@ -543,9 +569,10 @@ cancelSettingsBtn.addEventListener('click', closeSettingsModal);
 settingsForm.addEventListener('submit', handleSaveSettings);
 
 actionsMenuBtn.addEventListener('click', () => actionsDropdown.classList.toggle('hidden'));
-saveDataBtn.addEventListener('click', () => { saveDataToFile(); actionsDropdown.classList.add('hidden'); });
-loadDataBtn.addEventListener('click', () => { fileLoaderInput.click(); actionsDropdown.classList.add('hidden'); });
-fileLoaderInput.addEventListener('change', loadDataFromFile);
+// ** MODIFIED: Listeners point to new functions and hide menu on click **
+exportDataBtn.addEventListener('click', () => { exportDataToFile(); actionsDropdown.classList.add('hidden'); });
+importDataBtn.addEventListener('click', () => { fileLoaderInput.click(); actionsDropdown.classList.add('hidden'); });
+fileLoaderInput.addEventListener('change', importDataFromFile);
 
 document.addEventListener('click', (event) => {
     if (!event.target.closest('#actions-menu-container')) actionsDropdown.classList.add('hidden');
@@ -553,16 +580,15 @@ document.addEventListener('click', (event) => {
     if (!event.target.closest('.modal-content') && !event.target.closest('#edit-goals-btn')) closeSettingsModal();
 });
 
-// ** NEW: Event listeners for real-time form validation **
 addFoodForm.addEventListener('input', validateTrackerForm);
-addFoodForm.addEventListener('change', validateTrackerForm); // For the <select> element
+addFoodForm.addEventListener('change', validateTrackerForm);
 addToDbForm.addEventListener('input', validateDbForm);
 
 
 // --- 7. INITIALIZE APP ---
 function initializeApp() {
+    loadDataFromLocalStorage(); // ** NEW: Load data on startup
     showPage('tracker-page');
-    // ** NEW: Run validation on load to set initial button states **
     validateTrackerForm();
     validateDbForm();
 }
