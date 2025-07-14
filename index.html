@@ -17,6 +17,7 @@
         <nav>
             <div class="nav-tabs">
                 <button id="nav-tracker" class="nav-btn active">Tracker</button>
+                <button id="nav-meals" class="nav-btn">Meals</button>
                 <button id="nav-database" class="nav-btn">Database</button>
                 <button id="nav-reports" class="nav-btn">Reports</button>
             </div>
@@ -40,7 +41,6 @@
                 <form id="add-food-form">
                     <div class="autocomplete-container">
                         <input type="text" id="food-name" placeholder="Type a food name..." autocomplete="off" required>
-                        <!-- ** FIXED: Added inline style to hide this element by default ** -->
                         <div id="autocomplete-results" style="display: none;"></div>
                     </div>
                     <div class="inputs-grid">
@@ -86,7 +86,42 @@
             </div>
         </div>
 
-        <!-- Page 2: Food Database -->
+        <!-- Page 2: Meals -->
+        <div id="meals-page" class="page">
+             <main>
+                <div class="card">
+                    <h3>Create/Edit Meal</h3>
+                    <form id="create-meal-form">
+                        <input type="text" id="meal-name-input" placeholder="e.g., Protein Packed Omelette" required>
+                        
+                        <!-- New Food Adder UI for Meals -->
+                        <div class="add-food-to-meal-controls">
+                            <div class="autocomplete-container">
+                                <input type="text" id="meal-food-name-input" placeholder="Search for a food..." autocomplete="off">
+                                <div id="meal-autocomplete-results" style="display: none;"></div>
+                            </div>
+                            <input type="number" id="meal-food-servings-input" value="1" min="0.1" step="0.1">
+                            <button type="button" id="add-food-to-builder-btn" class="btn-secondary" aria-label="Add Food to Meal">+</button>
+                        </div>
+
+                        <div id="meal-builder-list">
+                            <!-- Food items will be added here via JS -->
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" id="save-meal-btn" class="btn-primary" disabled>Save Meal</button>
+                        </div>
+                    </form>
+                </div>
+                <div id="saved-meals-container">
+                    <div class="section-header">
+                        <h2>My Meals</h2>
+                    </div>
+                    <div id="saved-meals-list" class="card"></div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Page 3: Food Database -->
         <div id="database-page" class="page">
              <main>
                 <div class="card">
@@ -117,7 +152,7 @@
             </main>
         </div>
         
-        <!-- Page 3: Reports -->
+        <!-- Page 4: Reports -->
         <div id="reports-page" class="page">
             <main>
                 <div class="card">
@@ -138,7 +173,7 @@
     </div>
 
     <!-- Settings Modal -->
-    <div id="settings-modal" class="hidden">
+    <div id="settings-modal" class="modal hidden">
         <div class="modal-overlay"></div>
         <div class="modal-content">
             <h2>Edit Your Daily Goals</h2>
@@ -150,6 +185,28 @@
                 <div class="modal-actions">
                     <button type="button" id="cancel-settings-btn" class="btn-secondary">Cancel</button>
                     <button type="submit" class="btn-primary">Save Goals</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Meal to Day Modal -->
+    <div id="add-meal-to-day-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <h2 id="add-meal-modal-title">Add Meal to Day</h2>
+            <form id="add-meal-to-day-form">
+                <input type="hidden" id="add-meal-modal-id">
+                <label for="add-meal-to-day-select">Add to which meal?</label>
+                <select id="add-meal-to-day-select" required>
+                    <option value="breakfast">Breakfast</option>
+                    <option value="lunch">Lunch</option>
+                    <option value="dinner">Dinner</option>
+                    <option value="snack">Snack</option>
+                </select>
+                <div class="modal-actions">
+                    <button type="button" id="cancel-add-meal-btn" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn-primary">Add Meal</button>
                 </div>
             </form>
         </div>

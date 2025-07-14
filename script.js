@@ -4,22 +4,28 @@ let doughnutChart = null;
 let barChart = null;
 let editingState = { isEditing: false, dateKey: null, meal: null, index: -1 };
 let dbEditingState = { isEditing: false, id: null };
+let mealEditingState = { isEditing: false, id: null };
 let currentDbSort = 'name-asc';
+let selectedFoodForMeal = null; // Holds food data for meal builder
 
 let allData = {
     foodDatabase: [],
+    meals: [],
     history: {},
     userGoals: { calories: 2000, protein: 120 }
 };
 
 // --- REFERENCES TO HTML ELEMENTS ---
 const navTracker = document.getElementById('nav-tracker');
+const navMeals = document.getElementById('nav-meals');
 const navDatabase = document.getElementById('nav-database');
 const navReports = document.getElementById('nav-reports');
 const trackerPage = document.getElementById('tracker-page');
+const mealsPage = document.getElementById('meals-page');
 const databasePage = document.getElementById('database-page');
 const reportsPage = document.getElementById('reports-page');
 
+// Tracker Page
 const addFoodForm = document.getElementById('add-food-form');
 const foodNameInput = document.getElementById('food-name');
 const caloriesInput = document.getElementById('calories');
@@ -29,16 +35,26 @@ const mealSelect = document.getElementById('meal-select');
 const submitEntryBtn = document.getElementById('submit-entry-btn');
 const autocompleteResults = document.getElementById('autocomplete-results');
 const dailyFoodListDiv = document.getElementById('daily-food-list');
-
 const totalCaloriesText = document.getElementById('total-calories-text');
 const totalProteinText = document.getElementById('total-protein-text');
 const caloriesProgressBar = document.getElementById('calories-progress-bar');
 const proteinProgressBar = document.getElementById('protein-progress-bar');
-
 const prevDayBtn = document.getElementById('prev-day-btn');
 const nextDayBtn = document.getElementById('next-day-btn');
 const dateDisplayBtn = document.getElementById('date-display-btn');
 
+// Meals Page
+const createMealForm = document.getElementById('create-meal-form');
+const mealNameInput = document.getElementById('meal-name-input');
+const mealBuilderList = document.getElementById('meal-builder-list');
+const mealFoodNameInput = document.getElementById('meal-food-name-input');
+const mealAutocompleteResults = document.getElementById('meal-autocomplete-results');
+const mealFoodServingsInput = document.getElementById('meal-food-servings-input');
+const addFoodToBuilderBtn = document.getElementById('add-food-to-builder-btn');
+const saveMealBtn = document.getElementById('save-meal-btn');
+const savedMealsList = document.getElementById('saved-meals-list');
+
+// Database Page
 const addToDbForm = document.getElementById('add-to-db-form');
 const dbFoodNameInput = document.getElementById('db-food-name');
 const dbCaloriesInput = document.getElementById('db-calories');
@@ -47,19 +63,28 @@ const dbSubmitBtn = document.getElementById('db-submit-btn');
 const dbFoodListDiv = document.getElementById('db-food-list');
 const dbSortSelect = document.getElementById('db-sort-select');
 
+// Actions & Modals
 const actionsMenuBtn = document.getElementById('actions-menu-btn');
 const actionsDropdown = document.getElementById('actions-dropdown');
 const exportDataBtn = document.getElementById('export-data-btn');
 const importDataBtn = document.getElementById('import-data-btn');
 const fileLoaderInput = document.getElementById('file-loader');
-
 const editGoalsBtn = document.getElementById('edit-goals-btn');
+// Modals
+const allModals = document.querySelectorAll('.modal');
 const settingsModal = document.getElementById('settings-modal');
 const settingsForm = document.getElementById('settings-form');
 const goalCaloriesInput = document.getElementById('goal-calories');
 const goalProteinInput = document.getElementById('goal-protein');
 const cancelSettingsBtn = document.getElementById('cancel-settings-btn');
+const addMealToDayModal = document.getElementById('add-meal-to-day-modal');
+const addMealToDayForm = document.getElementById('add-meal-to-day-form');
+const addMealModalTitle = document.getElementById('add-meal-modal-title');
+const addMealModalIdInput = document.getElementById('add-meal-modal-id');
+const addMealToDaySelect = document.getElementById('add-meal-to-day-select');
+const cancelAddMealBtn = document.getElementById('cancel-add-meal-btn');
 
+// Reports Page
 const caloriesDoughnutChartCanvas = document.getElementById('calories-doughnut-chart');
 const dailyBarChartCanvas = document.getElementById('daily-bar-chart');
 
@@ -89,7 +114,7 @@ function getCurrentDayData() {
 
 function changeDate(daysToAdd) {
     currentDate.setDate(currentDate.getDate() + daysToAdd);
-    renderAll();
+    renderCurrentPage();
 }
 
 function resetForm() {
@@ -104,6 +129,14 @@ function resetDbForm() {
     dbSubmitBtn.textContent = 'Save to Database';
     dbEditingState = { isEditing: false, id: null };
     validateDbForm();
+}
+
+function resetMealForm() {
+    createMealForm.reset();
+    mealBuilderList.innerHTML = '';
+    selectedFoodForMeal = null;
+    mealEditingState = { isEditing: false, id: null };
+    validateMealForm();
 }
 
 function validateTrackerForm() {
@@ -121,16 +154,30 @@ function validateDbForm() {
     dbSubmitBtn.disabled = !(name && calories && protein);
 }
 
+function validateMealForm() {
+    const name = mealNameInput.value.trim();
+    const hasItems = mealBuilderList.children.length > 0;
+    saveMealBtn.disabled = !(name && hasItems);
+}
+
 // --- 3. RENDERING FUNCTIONS ---
-function renderAll() {
-    const activePageId = document.querySelector('.nav-btn.active').id;
-    if (activePageId === 'nav-tracker') {
-        renderDateControls();
-        renderDailyEntries();
-    } else if (activePageId === 'nav-reports') {
-        renderReportsPage();
+function renderCurrentPage() {
+    const activePageId = document.querySelector('.page.active').id;
+    switch (activePageId) {
+        case 'tracker-page':
+            renderDateControls();
+            renderDailyEntries();
+            break;
+        case 'meals-page':
+            renderSavedMeals();
+            break;
+        case 'database-page':
+            renderFoodDatabase();
+            break;
+        case 'reports-page':
+            renderReportsPage();
+            break;
     }
-    renderFoodDatabase();
 }
 
 function renderDateControls() {
@@ -177,7 +224,6 @@ function renderDailyEntries() {
 
             const mealHeader = document.createElement('h3');
             mealHeader.className = 'meal-header';
-            // ** FIXED: Removed the unwanted "P" from the end of the line **
             mealHeader.innerHTML = `
                 <span>${meal.charAt(0).toUpperCase() + meal.slice(1)}</span>
                 <span class="meal-subtotal">${mealCalories.toFixed(0)} kcal / ${mealProtein.toFixed(1)}g</span>
@@ -241,6 +287,32 @@ function renderFoodDatabase() {
     });
 }
 
+function renderSavedMeals() {
+    savedMealsList.innerHTML = '';
+    if (allData.meals.length === 0) {
+        savedMealsList.innerHTML = `<div class="db-food-item" style="justify-content: center; color: var(--color-text-tertiary);">You haven't created any meals yet.</div>`;
+        return;
+    }
+    allData.meals.forEach(meal => {
+        const totalCalories = meal.foods.reduce((sum, food) => sum + (food.calories * food.servings), 0);
+        const totalProtein = meal.foods.reduce((sum, food) => sum + (food.protein * food.servings), 0);
+
+        const mealDiv = document.createElement('div');
+        mealDiv.className = 'db-food-item';
+        mealDiv.innerHTML = `
+            <div>
+                <span class="food-item-name">${meal.name}</span>
+                <small class="food-item-stats">${meal.foods.length} items • ${totalCalories.toFixed(0)} kcal • ${totalProtein.toFixed(1)}g protein</small>
+            </div>
+            <div class="item-actions">
+                <button class="item-action-btn add-meal-to-day-btn" data-id="${meal.id}">Add to Day</button>
+                <button class="item-action-btn delete-btn" data-id="${meal.id}">Delete</button>
+            </div>
+        `;
+        savedMealsList.appendChild(mealDiv);
+    });
+}
+
 function renderReportsPage() {
     if (doughnutChart) doughnutChart.destroy();
     if (barChart) barChart.destroy();
@@ -280,18 +352,8 @@ function renderReportsPage() {
         data: {
             labels: labels,
             datasets: [
-                {
-                    label: 'Calories',
-                    data: dailyCalorieData,
-                    backgroundColor: accentColor,
-                    borderRadius: 4,
-                },
-                {
-                    label: 'Protein (g)',
-                    data: dailyProteinData,
-                    backgroundColor: primaryColor,
-                    borderRadius: 4,
-                }
+                { label: 'Calories', data: dailyCalorieData, backgroundColor: accentColor, borderRadius: 4 },
+                { label: 'Protein (g)', data: dailyProteinData, backgroundColor: primaryColor, borderRadius: 4 }
             ]
         },
         options: {
@@ -316,19 +378,13 @@ function renderReportsPage() {
                 data: [totalCaloriesConsumed, caloriesRemaining],
                 backgroundColor: [accentColor, surfaceColor],
                 borderColor: getCssVariable('--color-background'),
-                borderWidth: 4,
-                hoverOffset: 8
+                borderWidth: 4, hoverOffset: 8
             }]
         },
         options: {
             responsive: true, maintainAspectRatio: false,
             cutout: '70%',
-            plugins: { 
-                legend: { 
-                    position: 'bottom', 
-                    labels: { color: textColor, font: { size: 14 }, padding: 20 } 
-                } 
-            }
+            plugins: { legend: { position: 'bottom', labels: { color: textColor, font: { size: 14 }, padding: 20 } } }
         }
     });
 }
@@ -342,7 +398,7 @@ function showPage(pageId) {
     document.getElementById(pageId).classList.add('active');
     document.getElementById(`nav-${pageId.split('-')[0]}`).classList.add('active');
 
-    renderAll();
+    renderCurrentPage();
 }
 
 function handleAddOrUpdateDailyEntry(event) {
@@ -465,34 +521,49 @@ function handleDatabaseListClick(event) {
     }
 }
 
-function handleAutocomplete() {
-    const query = foodNameInput.value.toLowerCase();
-    autocompleteResults.innerHTML = '';
+function handleAutocomplete(inputElement, resultsElement) {
+    const query = inputElement.value.toLowerCase();
+    resultsElement.innerHTML = '';
     if (query.length < 1) {
-        autocompleteResults.style.display = 'none';
+        resultsElement.style.display = 'none';
         return;
     }
     const results = allData.foodDatabase.filter(food => food.name.toLowerCase().includes(query));
     if (results.length > 0) {
-        autocompleteResults.style.display = 'block';
+        resultsElement.style.display = 'block';
         results.forEach(food => {
             const itemDiv = document.createElement('div');
             itemDiv.className = 'autocomplete-item';
             itemDiv.innerHTML = `<span>${food.name}</span><span class="stats">${food.calories} kcal / ${food.protein}g</span>`;
             itemDiv.onclick = () => {
-                foodNameInput.value = food.name;
-                caloriesInput.value = food.calories;
-                proteinInput.value = food.protein;
-                autocompleteResults.innerHTML = '';
-                autocompleteResults.style.display = 'none';
-                validateTrackerForm();
-                servingsInput.focus();
+                if (inputElement === foodNameInput) {
+                    foodNameInput.value = food.name;
+                    caloriesInput.value = food.calories;
+                    proteinInput.value = food.protein;
+                    servingsInput.focus();
+                    validateTrackerForm();
+                } else if (inputElement === mealFoodNameInput) {
+                    mealFoodNameInput.value = food.name;
+                    selectedFoodForMeal = food; // Store the selected food object
+                    mealFoodServingsInput.focus();
+                }
+                resultsElement.innerHTML = '';
+                resultsElement.style.display = 'none';
             };
-            autocompleteResults.appendChild(itemDiv);
+            resultsElement.appendChild(itemDiv);
         });
     } else {
-        autocompleteResults.style.display = 'none';
+        resultsElement.style.display = 'none';
     }
+}
+
+// --- MODAL HANDLERS ---
+function openModal(modalElement) {
+    modalElement.classList.remove('hidden');
+}
+
+function closeModal(modalElement) {
+    modalElement.classList.add('hidden');
 }
 
 function handleSaveSettings(event) {
@@ -507,19 +578,119 @@ function handleSaveSettings(event) {
     currentDayData.goals = { ...allData.userGoals };
 
     saveDataToLocalStorage();
-    closeSettingsModal();
-    renderAll();
+    closeModal(settingsModal);
+    renderCurrentPage();
 }
 
-function openSettingsModal() {
-    goalCaloriesInput.value = allData.userGoals.calories;
-    goalProteinInput.value = allData.userGoals.protein;
-    settingsModal.classList.remove('hidden');
+// --- MEAL PAGE HANDLERS ---
+function handleAddFoodToBuilder() {
+    const servings = parseFloat(mealFoodServingsInput.value);
+    if (!selectedFoodForMeal || isNaN(servings) || servings <= 0) {
+        alert("Please select a valid food from the list and enter a valid serving amount.");
+        return;
+    }
+
+    // Check if food is already in the list to prevent duplicates
+    const existingItem = mealBuilderList.querySelector(`[data-id="${selectedFoodForMeal.id}"]`);
+    if (existingItem) {
+        alert("This food is already in the meal.");
+        return;
+    }
+
+    const foodItemDiv = document.createElement('div');
+    foodItemDiv.className = 'meal-builder-item';
+    foodItemDiv.dataset.id = selectedFoodForMeal.id;
+    foodItemDiv.dataset.servings = servings;
+    foodItemDiv.innerHTML = `
+        <div>
+            <span>${selectedFoodForMeal.name}</span>
+            <span class="servings-text">(${servings} servings)</span>
+        </div>
+        <button type="button" class="delete-from-meal-builder-btn" aria-label="Remove item">×</button>
+    `;
+    mealBuilderList.appendChild(foodItemDiv);
+
+    // Reset inputs for next food
+    selectedFoodForMeal = null;
+    mealFoodNameInput.value = '';
+    mealFoodServingsInput.value = '1';
+    validateMealForm();
 }
 
-function closeSettingsModal() {
-    settingsModal.classList.add('hidden');
+function handleMealBuilderListClick(event) {
+    if (event.target.classList.contains('delete-from-meal-builder-btn')) {
+        event.target.closest('.meal-builder-item').remove();
+        validateMealForm();
+    }
 }
+
+function handleSaveMeal(event) {
+    event.preventDefault();
+    const name = mealNameInput.value.trim();
+    if (!name) return;
+
+    const foodsInBuilder = Array.from(mealBuilderList.querySelectorAll('.meal-builder-item')).map(item => {
+        const foodId = parseInt(item.dataset.id);
+        const servings = parseFloat(item.dataset.servings);
+        const foodData = allData.foodDatabase.find(f => f.id === foodId);
+        return { ...foodData, servings };
+    });
+
+    if (foodsInBuilder.length > 0) {
+        const newMeal = { id: Date.now(), name, foods: foodsInBuilder };
+        allData.meals.push(newMeal);
+        saveDataToLocalStorage();
+        renderSavedMeals();
+        resetMealForm();
+    }
+}
+
+function handleSavedMealsListClick(event) {
+    const target = event.target.closest('.item-action-btn');
+    if (!target) return;
+
+    const mealId = parseInt(target.dataset.id);
+
+    if (target.classList.contains('delete-btn')) {
+        if (confirm("Are you sure you want to delete this meal?")) {
+            allData.meals = allData.meals.filter(m => m.id !== mealId);
+            saveDataToLocalStorage();
+            renderSavedMeals();
+        }
+    } else if (target.classList.contains('add-meal-to-day-btn')) {
+        const mealToAdd = allData.meals.find(m => m.id === mealId);
+        if (mealToAdd) {
+            addMealModalIdInput.value = mealId;
+            addMealModalTitle.textContent = `Add "${mealToAdd.name}" to...`;
+            openModal(addMealToDayModal);
+        }
+    }
+}
+
+function handleConfirmAddMealToDay(event) {
+    event.preventDefault();
+    const mealId = parseInt(addMealModalIdInput.value);
+    const mealType = addMealToDaySelect.value;
+    const mealToAdd = allData.meals.find(m => m.id === mealId);
+
+    if (mealToAdd && mealType) {
+        const currentDayData = getCurrentDayData();
+        mealToAdd.foods.forEach(food => {
+            const newEntry = {
+                name: `${food.name} (${food.servings} servings)`,
+                baseName: food.name,
+                calories: food.calories * food.servings,
+                protein: food.protein * food.servings,
+                servings: food.servings
+            };
+            currentDayData.entries[mealType].push(newEntry);
+        });
+        saveDataToLocalStorage();
+        closeModal(addMealToDayModal);
+        showPage('tracker-page');
+    }
+}
+
 
 // --- 5. DATA PERSISTENCE & IMPORT/EXPORT ---
 function saveDataToLocalStorage() {
@@ -538,6 +709,7 @@ function loadDataFromLocalStorage() {
             const parsedData = JSON.parse(savedData);
             if (parsedData.foodDatabase && parsedData.history && parsedData.userGoals) {
                 allData = parsedData;
+                if (!allData.meals) allData.meals = [];
             } else {
                 throw new Error("Invalid data structure in localStorage.");
             }
@@ -576,7 +748,8 @@ function importDataFromFile(event) {
                 saveDataToLocalStorage();
                 resetForm();
                 resetDbForm();
-                renderAll();
+                resetMealForm();
+                renderCurrentPage();
                 alert("Data imported successfully!");
             }
         } catch (error) {
@@ -590,48 +763,67 @@ function importDataFromFile(event) {
 }
 
 // --- 6. EVENT LISTENERS ---
+// Page Navigation
 navTracker.addEventListener('click', () => showPage('tracker-page'));
+navMeals.addEventListener('click', () => showPage('meals-page'));
 navDatabase.addEventListener('click', () => showPage('database-page'));
 navReports.addEventListener('click', () => showPage('reports-page'));
 
+// Tracker Page
 addFoodForm.addEventListener('submit', handleAddOrUpdateDailyEntry);
-foodNameInput.addEventListener('input', handleAutocomplete);
+foodNameInput.addEventListener('input', () => handleAutocomplete(foodNameInput, autocompleteResults));
 dailyFoodListDiv.addEventListener('click', handleDailyListClick);
+
+// Database Page
 addToDbForm.addEventListener('submit', handleAddOrUpdateDbEntry);
 dbFoodListDiv.addEventListener('click', handleDatabaseListClick);
-
 dbSortSelect.addEventListener('change', (event) => {
     currentDbSort = event.target.value;
     renderFoodDatabase();
 });
 
+// Meals Page
+createMealForm.addEventListener('submit', handleSaveMeal);
+mealNameInput.addEventListener('input', validateMealForm);
+mealFoodNameInput.addEventListener('input', () => handleAutocomplete(mealFoodNameInput, mealAutocompleteResults));
+addFoodToBuilderBtn.addEventListener('click', handleAddFoodToBuilder);
+mealBuilderList.addEventListener('click', handleMealBuilderListClick);
+savedMealsList.addEventListener('click', handleSavedMealsListClick);
+
+// Date Navigation
 prevDayBtn.addEventListener('click', () => changeDate(-1));
 nextDayBtn.addEventListener('click', () => changeDate(1));
 dateDisplayBtn.addEventListener('click', () => {
     if (dateDisplayBtn.disabled) return;
     currentDate = new Date();
-    renderAll();
+    renderCurrentPage();
 });
 
-editGoalsBtn.addEventListener('click', openSettingsModal);
-cancelSettingsBtn.addEventListener('click', closeSettingsModal);
+// Modals and Actions
+editGoalsBtn.addEventListener('click', () => openModal(settingsModal));
+cancelSettingsBtn.addEventListener('click', () => closeModal(settingsModal));
 settingsForm.addEventListener('submit', handleSaveSettings);
+addMealToDayForm.addEventListener('submit', handleConfirmAddMealToDay);
+cancelAddMealBtn.addEventListener('click', () => closeModal(addMealToDayModal));
 
 actionsMenuBtn.addEventListener('click', () => actionsDropdown.classList.toggle('hidden'));
 exportDataBtn.addEventListener('click', () => { exportDataToFile(); actionsDropdown.classList.add('hidden'); });
 importDataBtn.addEventListener('click', () => { fileLoaderInput.click(); actionsDropdown.classList.add('hidden'); });
 fileLoaderInput.addEventListener('change', importDataFromFile);
 
+// Global Click Listeners for closing popups/modals
 document.addEventListener('click', (event) => {
     if (!event.target.closest('#actions-menu-container')) actionsDropdown.classList.add('hidden');
     if (!event.target.closest('.autocomplete-container')) {
         autocompleteResults.style.display = 'none';
+        mealAutocompleteResults.style.display = 'none';
     }
-    if (!event.target.closest('.modal-content') && !event.target.closest('#edit-goals-btn')) {
-        closeSettingsModal();
+    if (event.target.classList.contains('modal-overlay')) {
+        allModals.forEach(closeModal);
     }
 });
 
+// Form Validation Listeners
 addFoodForm.addEventListener('input', validateTrackerForm);
 addFoodForm.addEventListener('change', validateTrackerForm);
 addToDbForm.addEventListener('input', validateDbForm);
@@ -642,6 +834,7 @@ function initializeApp() {
     showPage('tracker-page');
     validateTrackerForm();
     validateDbForm();
+    validateMealForm();
 }
 
 initializeApp();
