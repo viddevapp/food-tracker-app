@@ -1,6 +1,8 @@
 // --- 1. GLOBAL STATE AND REFERENCES ---
 let currentDate = new Date();
-let myChart = null;
+// ** NEW: Separate variables for each chart **
+let doughnutChart = null;
+let barChart = null;
 let editingState = { isEditing: false, dateKey: null, meal: null, index: -1 };
 let dbEditingState = { isEditing: false, id: null };
 let currentDbSort = 'name-asc';
@@ -60,9 +62,10 @@ const goalCaloriesInput = document.getElementById('goal-calories');
 const goalProteinInput = document.getElementById('goal-protein');
 const cancelSettingsBtn = document.getElementById('cancel-settings-btn');
 
-const caloriesChartCanvas = document.getElementById('calories-chart');
-const reportsTotalCalories = document.getElementById('reports-total-calories');
-const reportsWeeklyGoal = document.getElementById('reports-weekly-goal');
+// ** NEW: References to both chart canvases **
+const caloriesDoughnutChartCanvas = document.getElementById('calories-doughnut-chart');
+const dailyBarChartCanvas = document.getElementById('daily-bar-chart');
+
 
 // --- 2. CORE LOGIC & HELPER FUNCTIONS ---
 function getFormattedDate(date) {
@@ -102,13 +105,14 @@ function resetDbForm() {
 
 // --- 3. RENDERING FUNCTIONS ---
 function renderAll() {
-    const activePage = document.querySelector('.nav-btn.active').id;
-    if (activePage === 'nav-tracker') {
+    const activePageId = document.querySelector('.nav-btn.active').id;
+    if (activePageId === 'nav-tracker') {
         renderDateControls();
         renderDailyEntries();
-    } else if (activePage === 'nav-reports') {
+    } else if (activePageId === 'nav-reports') {
         renderReportsPage();
     }
+    // Always render the database in the background so it's ready
     renderFoodDatabase();
 }
 
@@ -174,16 +178,9 @@ function renderDailyEntries() {
 function renderFoodDatabase() {
     const sortedDb = [...allData.foodDatabase];
     switch(currentDbSort) {
-        case 'calories-desc':
-            sortedDb.sort((a, b) => b.calories - a.calories);
-            break;
-        case 'protein-desc':
-            sortedDb.sort((a, b) => b.protein - a.protein);
-            break;
-        case 'name-asc':
-        default:
-            sortedDb.sort((a, b) => a.name.localeCompare(b.name));
-            break;
+        case 'calories-desc': sortedDb.sort((a, b) => b.calories - a.calories); break;
+        case 'protein-desc': sortedDb.sort((a, b) => b.protein - a.protein); break;
+        default: sortedDb.sort((a, b) => a.name.localeCompare(b.name)); break;
     }
 
     dbFoodListDiv.innerHTML = '';
@@ -201,26 +198,67 @@ function renderFoodDatabase() {
     });
 }
 
+// ** MODIFIED: This function is completely rewritten to handle two charts **
 function renderReportsPage() {
-    if (myChart) myChart.destroy();
+    if (doughnutChart) doughnutChart.destroy();
+    if (barChart) barChart.destroy();
     
-    let totalCaloriesConsumed = 0;
+    const labels = [];
+    const dailyCalorieData = [];
+    const dailyProteinData = [];
+    
     const tempDate = new Date();
 
     for (let i = 0; i < 7; i++) {
         const dateKey = getFormattedDate(tempDate);
+        labels.unshift(tempDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+        
+        let dailyCalories = 0;
+        let dailyProtein = 0;
         if (allData.history[dateKey]) {
             for (const meal in allData.history[dateKey].entries) {
-                allData.history[dateKey].entries[meal].forEach(entry => { totalCaloriesConsumed += entry.calories; });
+                allData.history[dateKey].entries[meal].forEach(entry => {
+                    dailyCalories += entry.calories;
+                    dailyProtein += entry.protein;
+                });
             }
         }
+        dailyCalorieData.unshift(dailyCalories);
+        dailyProteinData.unshift(dailyProtein);
         tempDate.setDate(tempDate.getDate() - 1);
     }
+    
+    // 1. Render Bar Chart
+    barChart = new Chart(dailyBarChartCanvas, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Calories',
+                    data: dailyCalorieData,
+                    backgroundColor: '#4CAF50',
+                },
+                {
+                    label: 'Protein (g)',
+                    data: dailyProteinData,
+                    backgroundColor: '#2980b9',
+                }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true, ticks: { color: '#ccc' } }, x: { ticks: { color: '#ccc' } } },
+            plugins: { legend: { labels: { color: '#ccc' } } }
+        }
+    });
 
+    // 2. Render Doughnut Chart
+    const totalCaloriesConsumed = dailyCalorieData.reduce((sum, val) => sum + val, 0);
     const weeklyGoal = allData.userGoals.calories * 7;
     const caloriesRemaining = Math.max(0, weeklyGoal - totalCaloriesConsumed);
 
-    myChart = new Chart(caloriesChartCanvas, {
+    doughnutChart = new Chart(caloriesDoughnutChartCanvas, {
         type: 'doughnut',
         data: {
             labels: ['Consumed', 'Remaining'],
@@ -234,9 +272,6 @@ function renderReportsPage() {
             plugins: { legend: { position: 'bottom', labels: { color: '#ccc' } } }
         }
     });
-
-    reportsTotalCalories.textContent = `${totalCaloriesConsumed.toFixed(0)} kcal`;
-    reportsWeeklyGoal.textContent = `${weeklyGoal.toFixed(0)} kcal`;
 }
 
 // --- 4. EVENT HANDLER FUNCTIONS ---
@@ -250,7 +285,6 @@ function showPage(pageId) {
     renderAll();
 }
 
-// ** MODIFIED: This function now correctly handles moving an entry between meals during an edit **
 function handleAddOrUpdateDailyEntry(event) {
     event.preventDefault();
     const name = foodNameInput.value.trim();
@@ -270,22 +304,15 @@ function handleAddOrUpdateDailyEntry(event) {
     const currentDayData = getCurrentDayData();
 
     if (editingState.isEditing) {
-        // ** BUG FIX: Handle changing meal type during an edit **
         const originalMeal = editingState.meal;
         const newMeal = meal;
-
-        // If the meal is different, we need to move the entry.
         if (originalMeal !== newMeal) {
-            // 1. Remove from old meal array
             currentDayData.entries[originalMeal].splice(editingState.index, 1);
-            // 2. Add to the new meal array
             currentDayData.entries[newMeal].push(newEntry);
         } else {
-            // If the meal is the same, just update it in place.
             currentDayData.entries[originalMeal][editingState.index] = newEntry;
         }
     } else {
-        // This is a new entry, so add it normally.
         currentDayData.entries[meal].push(newEntry);
         const foodExists = allData.foodDatabase.some(food => food.name.toLowerCase() === name.toLowerCase());
         if (!foodExists) {
@@ -355,7 +382,6 @@ function handleDatabaseListClick(event) {
 
     if (target.classList.contains('delete-btn')) {
         allData.foodDatabase = allData.foodDatabase.filter(f => f.id !== foodId);
-        // If we were editing this item, reset the form
         if (dbEditingState.isEditing && dbEditingState.id === foodId) {
             resetDbForm();
         }

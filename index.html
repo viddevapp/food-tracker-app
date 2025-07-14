@@ -33,7 +33,6 @@
 
         <!-- Page 1: Daily Tracker -->
         <div id="tracker-page" class="page active">
-            <!-- ** MODIFIED: main no longer scrolls, a child div will ** -->
             <main>
                 <form id="add-food-form">
                     <div class="autocomplete-container">
@@ -72,9 +71,7 @@
                     </div>
                 </div>
 
-                <!-- ** NEW: This container will now be the scrolling part ** -->
                 <div class="scrollable-list-container">
-                    <h2>Day's Entries</h2>
                     <div id="daily-food-list"></div>
                 </div>
             </main>
@@ -89,8 +86,6 @@
             </div>
         </div>
 
-        <!-- (The rest of the HTML is unchanged) -->
-        
         <!-- Page 2: Food Database -->
         <div id="database-page" class="page">
              <main>
@@ -123,20 +118,15 @@
         <!-- Page 3: Reports -->
         <div id="reports-page" class="page">
             <main>
-                <h2>Last 7 Days - Calorie Breakdown</h2>
+                <h2>Last 7 Days - Daily Totals</h2>
+                <!-- ** NEW: Canvas for the bar chart ** -->
                 <div class="chart-container">
-                    <canvas id="calories-chart"></canvas>
+                    <canvas id="daily-bar-chart"></canvas>
                 </div>
-                <div id="reports-summary">
-                    <h3>7-Day Summary</h3>
-                    <p>
-                        <span>Total Calories Consumed:</span>
-                        <span id="reports-total-calories">0</span>
-                    </p>
-                    <p>
-                        <span>Your Weekly Goal:</span>
-                        <span id="reports-weekly-goal">0</span>
-                    </p>
+                
+                <h2 class="reports-header-secondary">Weekly Calorie Breakdown</h2>
+                <div class="chart-container">
+                    <canvas id="calories-doughnut-chart"></canvas>
                 </div>
             </main>
         </div>
