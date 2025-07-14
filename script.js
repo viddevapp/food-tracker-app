@@ -250,6 +250,7 @@ function showPage(pageId) {
     renderAll();
 }
 
+// ** MODIFIED: This function now correctly handles moving an entry between meals during an edit **
 function handleAddOrUpdateDailyEntry(event) {
     event.preventDefault();
     const name = foodNameInput.value.trim();
@@ -269,8 +270,22 @@ function handleAddOrUpdateDailyEntry(event) {
     const currentDayData = getCurrentDayData();
 
     if (editingState.isEditing) {
-        currentDayData.entries[editingState.meal][editingState.index] = newEntry;
+        // ** BUG FIX: Handle changing meal type during an edit **
+        const originalMeal = editingState.meal;
+        const newMeal = meal;
+
+        // If the meal is different, we need to move the entry.
+        if (originalMeal !== newMeal) {
+            // 1. Remove from old meal array
+            currentDayData.entries[originalMeal].splice(editingState.index, 1);
+            // 2. Add to the new meal array
+            currentDayData.entries[newMeal].push(newEntry);
+        } else {
+            // If the meal is the same, just update it in place.
+            currentDayData.entries[originalMeal][editingState.index] = newEntry;
+        }
     } else {
+        // This is a new entry, so add it normally.
         currentDayData.entries[meal].push(newEntry);
         const foodExists = allData.foodDatabase.some(food => food.name.toLowerCase() === name.toLowerCase());
         if (!foodExists) {
@@ -340,6 +355,10 @@ function handleDatabaseListClick(event) {
 
     if (target.classList.contains('delete-btn')) {
         allData.foodDatabase = allData.foodDatabase.filter(f => f.id !== foodId);
+        // If we were editing this item, reset the form
+        if (dbEditingState.isEditing && dbEditingState.id === foodId) {
+            resetDbForm();
+        }
         renderFoodDatabase();
     } else if (target.classList.contains('edit-btn')) {
         dbFoodNameInput.value = food.name;
@@ -417,7 +436,6 @@ function saveDataToFile() {
     link.click();
 }
 
-// ** MODIFIED: The file input no longer specifies an accept type **
 function loadDataFromFile(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -425,7 +443,6 @@ function loadDataFromFile(event) {
     reader.onload = function(e) {
         try {
             allData = JSON.parse(e.target.result);
-            // Basic validation and migration can be added here if needed
             if (!allData.history || !allData.foodDatabase || !allData.userGoals) {
                 throw new Error("Invalid data file format.");
             }
