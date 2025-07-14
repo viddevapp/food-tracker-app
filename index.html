@@ -36,16 +36,16 @@
             <main>
                 <form id="add-food-form">
                     <div class="autocomplete-container">
-                        <input type="text" id="food-name" placeholder="Type a food name..." autocomplete="off">
+                        <input type="text" id="food-name" placeholder="Type a food name..." autocomplete="off" required>
                         <div id="autocomplete-results"></div>
                     </div>
                     <div class="inputs-row">
-                        <input type="number" id="calories" placeholder="Calories">
-                        <input type="number" id="protein" placeholder="Protein (g)">
+                        <input type="number" id="calories" placeholder="Calories" required>
+                        <input type="number" id="protein" placeholder="Protein (g)" required>
                     </div>
                     <div class="inputs-row">
                         <input type="number" id="servings" placeholder="Servings" value="1" step="any">
-                        <select id="meal-select">
+                        <select id="meal-select" required>
                             <option value="" disabled selected>Choose a meal...</option>
                             <option value="breakfast">Breakfast</option>
                             <option value="lunch">Lunch</option>
@@ -53,7 +53,8 @@
                             <option value="snack">Snack</option>
                         </select>
                     </div>
-                    <button type="submit" id="submit-entry-btn" class="btn-primary">Add to Day</button>
+                    <!-- ** MODIFIED: Added the 'disabled' attribute ** -->
+                    <button type="submit" id="submit-entry-btn" class="btn-primary" disabled>Add to Day</button>
                 </form>
 
                 <div id="totals">
@@ -96,7 +97,8 @@
                         <input type="number" id="db-calories" placeholder="Calories" required>
                         <input type="number" id="db-protein" placeholder="Protein (g)" required>
                     </div>
-                    <button type="submit" id="db-submit-btn" class="btn-primary">Save to Database</button>
+                    <!-- ** MODIFIED: Added the 'disabled' attribute ** -->
+                    <button type="submit" id="db-submit-btn" class="btn-primary" disabled>Save to Database</button>
                 </form>
                 <div id="db-list-container">
                     <div class="section-header">
@@ -119,7 +121,6 @@
         <div id="reports-page" class="page">
             <main>
                 <h2>Last 7 Days - Daily Totals</h2>
-                <!-- ** NEW: Canvas for the bar chart ** -->
                 <div class="chart-container">
                     <canvas id="daily-bar-chart"></canvas>
                 </div>

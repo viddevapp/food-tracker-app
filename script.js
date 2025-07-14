@@ -1,6 +1,5 @@
 // --- 1. GLOBAL STATE AND REFERENCES ---
 let currentDate = new Date();
-// ** NEW: Separate variables for each chart **
 let doughnutChart = null;
 let barChart = null;
 let editingState = { isEditing: false, dateKey: null, meal: null, index: -1 };
@@ -62,7 +61,6 @@ const goalCaloriesInput = document.getElementById('goal-calories');
 const goalProteinInput = document.getElementById('goal-protein');
 const cancelSettingsBtn = document.getElementById('cancel-settings-btn');
 
-// ** NEW: References to both chart canvases **
 const caloriesDoughnutChartCanvas = document.getElementById('calories-doughnut-chart');
 const dailyBarChartCanvas = document.getElementById('daily-bar-chart');
 
@@ -95,12 +93,43 @@ function resetForm() {
     addFoodForm.reset();
     submitEntryBtn.textContent = 'Add to Day';
     editingState = { isEditing: false, dateKey: null, meal: null, index: -1 };
+    // ** NEW: Validate the form to disable the button after reset **
+    validateTrackerForm();
 }
 
 function resetDbForm() {
     addToDbForm.reset();
     dbSubmitBtn.textContent = 'Save to Database';
     dbEditingState = { isEditing: false, id: null };
+    // ** NEW: Validate the form to disable the button after reset **
+    validateDbForm();
+}
+
+// ** NEW: Function to validate the main tracker form **
+function validateTrackerForm() {
+    const name = foodNameInput.value.trim();
+    const calories = caloriesInput.value;
+    const protein = proteinInput.value;
+    const meal = mealSelect.value;
+
+    if (name && calories && protein && meal) {
+        submitEntryBtn.disabled = false;
+    } else {
+        submitEntryBtn.disabled = true;
+    }
+}
+
+// ** NEW: Function to validate the database form **
+function validateDbForm() {
+    const name = dbFoodNameInput.value.trim();
+    const calories = dbCaloriesInput.value;
+    const protein = dbProteinInput.value;
+
+    if (name && calories && protein) {
+        dbSubmitBtn.disabled = false;
+    } else {
+        dbSubmitBtn.disabled = true;
+    }
 }
 
 // --- 3. RENDERING FUNCTIONS ---
@@ -198,7 +227,6 @@ function renderFoodDatabase() {
     });
 }
 
-// ** MODIFIED: This function is completely rewritten to handle two charts **
 function renderReportsPage() {
     if (doughnutChart) doughnutChart.destroy();
     if (barChart) barChart.destroy();
@@ -228,7 +256,6 @@ function renderReportsPage() {
         tempDate.setDate(tempDate.getDate() - 1);
     }
     
-    // 1. Render Bar Chart
     barChart = new Chart(dailyBarChartCanvas, {
         type: 'bar',
         data: {
@@ -253,7 +280,6 @@ function renderReportsPage() {
         }
     });
 
-    // 2. Render Doughnut Chart
     const totalCaloriesConsumed = dailyCalorieData.reduce((sum, val) => sum + val, 0);
     const weeklyGoal = allData.userGoals.calories * 7;
     const caloriesRemaining = Math.max(0, weeklyGoal - totalCaloriesConsumed);
@@ -293,8 +319,8 @@ function handleAddOrUpdateDailyEntry(event) {
     const servings = parseFloat(servingsInput.value) || 1;
     const meal = mealSelect.value;
 
-    if (!meal) return alert("Please choose a meal type.");
-    if (!name || isNaN(calories) || isNaN(protein)) return alert("Please fill out the food name, calories, and protein.");
+    // The button validation already prevents this, but it's good practice to keep server-side style validation.
+    if (!meal || !name || isNaN(calories) || isNaN(protein)) return;
 
     const newEntry = {
         name: `${name} (${servings} servings)`,
@@ -347,6 +373,9 @@ function handleDailyListClick(event) {
         
         submitEntryBtn.textContent = 'Update Entry';
         editingState = { isEditing: true, dateKey: getFormattedDate(currentDate), meal, index };
+        
+        // ** NEW: Validate the form when populating it for an edit **
+        validateTrackerForm();
     }
 }
 
@@ -356,7 +385,7 @@ function handleAddOrUpdateDbEntry(event) {
     const calories = parseFloat(dbCaloriesInput.value);
     const protein = parseFloat(dbProteinInput.value);
 
-    if (!name || isNaN(calories) || isNaN(protein)) return alert("Please enter valid data.");
+    if (!name || isNaN(calories) || isNaN(protein)) return;
     
     if (dbEditingState.isEditing) {
         const foodToUpdate = allData.foodDatabase.find(food => food.id === dbEditingState.id);
@@ -395,6 +424,9 @@ function handleDatabaseListClick(event) {
         dbEditingState = { isEditing: true, id: food.id };
         
         databasePage.querySelector('main').scrollTop = 0;
+
+        // ** NEW: Validate the form when populating it for an edit **
+        validateDbForm();
     }
 }
 
@@ -418,6 +450,8 @@ function handleAutocomplete() {
                 proteinInput.value = food.protein;
                 autocompleteResults.innerHTML = '';
                 autocompleteResults.style.display = 'none';
+                // ** NEW: Validate form after autocompleting **
+                validateTrackerForm();
             };
             autocompleteResults.appendChild(itemDiv);
         });
@@ -519,5 +553,18 @@ document.addEventListener('click', (event) => {
     if (!event.target.closest('.modal-content') && !event.target.closest('#edit-goals-btn')) closeSettingsModal();
 });
 
+// ** NEW: Event listeners for real-time form validation **
+addFoodForm.addEventListener('input', validateTrackerForm);
+addFoodForm.addEventListener('change', validateTrackerForm); // For the <select> element
+addToDbForm.addEventListener('input', validateDbForm);
+
+
 // --- 7. INITIALIZE APP ---
-showPage('tracker-page');
+function initializeApp() {
+    showPage('tracker-page');
+    // ** NEW: Run validation on load to set initial button states **
+    validateTrackerForm();
+    validateDbForm();
+}
+
+initializeApp();

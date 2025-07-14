@@ -69,6 +69,16 @@ select { appearance: none; background-image: url('data:image/svg+xml;charset=US-
 .btn-secondary { width: 100%; padding: 12px; border: 1px solid #555; background-color: transparent; color: #ccc; font-size: 15px; font-weight: 600; border-radius: 8px; cursor: pointer; transition: background-color 0.2s; }
 .btn-secondary:hover { background-color: #333; }
 
+/* ** NEW: Style for disabled buttons ** */
+.btn-primary:disabled, .btn-secondary:disabled {
+    background-color: #444;
+    color: #888;
+    cursor: not-allowed;
+}
+.btn-primary:disabled:hover {
+    background-color: #444; /* Prevent hover effect on disabled button */
+}
+
 /* 5. Autocomplete */
 .autocomplete-container { position: relative; }
 #autocomplete-results { position: absolute; top: 100%; left: 0; right: 0; background: #2a2a2a; border: 1px solid #444; border-top: none; border-radius: 0 0 8px 8px; z-index: 10; max-height: 150px; overflow-y: auto; }
@@ -120,7 +130,6 @@ h3 { margin-top: 0; color: #eee; }
 
 /* 9. Reports Page */
 .chart-container { position: relative; height: 250px; width: 100%; margin-bottom: 25px; }
-/* ** NEW: Spacing for the second header ** */
 .reports-header-secondary { margin-top: 25px; }
 
 /* 10. Settings Modal */
