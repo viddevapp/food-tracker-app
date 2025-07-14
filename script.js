@@ -590,7 +590,6 @@ function handleAddFoodToBuilder() {
         return;
     }
 
-    // Check if food is already in the list to prevent duplicates
     const existingItem = mealBuilderList.querySelector(`[data-id="${selectedFoodForMeal.id}"]`);
     if (existingItem) {
         alert("This food is already in the meal.");
@@ -610,7 +609,6 @@ function handleAddFoodToBuilder() {
     `;
     mealBuilderList.appendChild(foodItemDiv);
 
-    // Reset inputs for next food
     selectedFoodForMeal = null;
     mealFoodNameInput.value = '';
     mealFoodServingsInput.value = '1';
@@ -811,7 +809,6 @@ exportDataBtn.addEventListener('click', () => { exportDataToFile(); actionsDropd
 importDataBtn.addEventListener('click', () => { fileLoaderInput.click(); actionsDropdown.classList.add('hidden'); });
 fileLoaderInput.addEventListener('change', importDataFromFile);
 
-// Global Click Listeners for closing popups/modals
 document.addEventListener('click', (event) => {
     if (!event.target.closest('#actions-menu-container')) actionsDropdown.classList.add('hidden');
     if (!event.target.closest('.autocomplete-container')) {
@@ -823,7 +820,6 @@ document.addEventListener('click', (event) => {
     }
 });
 
-// Form Validation Listeners
 addFoodForm.addEventListener('input', validateTrackerForm);
 addFoodForm.addEventListener('change', validateTrackerForm);
 addToDbForm.addEventListener('input', validateDbForm);

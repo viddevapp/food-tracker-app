@@ -16,9 +16,9 @@
         <!-- Main Navigation -->
         <nav>
             <div class="nav-tabs">
-                <button id="nav-tracker" class="nav-btn active">Tracker</button>
+                <button id="nav-tracker" class="nav-btn active">Daily Tracker</button>
                 <button id="nav-meals" class="nav-btn">Meals</button>
-                <button id="nav-database" class="nav-btn">Database</button>
+                <button id="nav-database" class="nav-btn">Food List</button>
                 <button id="nav-reports" class="nav-btn">Reports</button>
             </div>
             <div class="nav-actions">
@@ -94,7 +94,6 @@
                     <form id="create-meal-form">
                         <input type="text" id="meal-name-input" placeholder="e.g., Protein Packed Omelette" required>
                         
-                        <!-- New Food Adder UI for Meals -->
                         <div class="add-food-to-meal-controls">
                             <div class="autocomplete-container">
                                 <input type="text" id="meal-food-name-input" placeholder="Search for a food..." autocomplete="off">
@@ -105,7 +104,6 @@
                         </div>
 
                         <div id="meal-builder-list">
-                            <!-- Food items will be added here via JS -->
                         </div>
                         <div class="form-actions">
                             <button type="submit" id="save-meal-btn" class="btn-primary" disabled>Save Meal</button>
@@ -121,7 +119,7 @@
             </main>
         </div>
 
-        <!-- Page 3: Food Database -->
+        <!-- Page 3: Food List -->
         <div id="database-page" class="page">
              <main>
                 <div class="card">
